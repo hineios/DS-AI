@@ -92,7 +92,7 @@ function DoScience:Visit()
 			
 			if self.buildTable and self.buildTable.prefab then
 				local toBuild = self.buildTable.prefab
-				local recipe = GetRecipe(toBuild)
+				local recipe = GetValidRecipe(toBuild)
 				
 				if not recipe then
 					print("Cannot build " .. toBuild .. " as it doesn't have a recipe")
@@ -154,7 +154,7 @@ function DoScience:Visit()
 		local tech_level = self.inst.components.builder.accessible_tech_trees
 		for k,v in pairs(BUILD_PRIORITY) do
 			-- Looking for things we can prototype
-			local recipe = GetRecipe(v)
+			local recipe = GetValidRecipe(v)
 			
 			-- If not nil, will contain useful info like 'where' to build this now
 			local buildinfo = build_info[v]

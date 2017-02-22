@@ -34,7 +34,7 @@ function CanPlayerBuildThis(player, thingToBuild, numToBuild, recursive)
 	
 	if numToBuild == nil then numToBuild = 1 end
 	
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
 	
 	-- Not a real thing so we can't possibly build this
 	if not recipe then 
@@ -110,7 +110,7 @@ end
 -- Returns nil if there were no actions generated
 function GenerateBufferedBuildOrder(player, thingToBuild, pos, onSuccess, onFail)
 	local bufferedBuildList = {}
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
 	-- not a real thing
 	if not recipe then return end
 	

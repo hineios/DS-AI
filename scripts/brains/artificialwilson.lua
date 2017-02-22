@@ -62,7 +62,7 @@ local function decrementFromGatherList(_prefab,_number)
 end
 
 local function addRecipeToGatherList(thingToBuild, addFullRecipe)
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
     if recipe then
 		local player = GetPlayer()
         for ik, iv in pairs(recipe.ingredients) do
@@ -105,7 +105,7 @@ local function CanIBuildThis(player, thingToBuild, numToBuild, recursive)
 	
 	if numToBuild == nil then numToBuild = 1 end
 	
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
 	
 	-- Not a real thing so we can't possibly build this
 	if not recipe then 
@@ -172,7 +172,7 @@ end
 
 -- Should only be called after the above call to ensure we can build it.
 local function OldBuildThis(player, thingToBuild, pos)
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
 	-- not a real thing
 	if not recipe then return end
 	
@@ -229,7 +229,7 @@ local function OldBuildThis(player, thingToBuild, pos)
 					local action = BufferedAction(player,nil,ACTIONS.BUILD,nil,pos,v.toMake,nil)
 					player:PushBufferedAction(action)
 					--player.components.locomotor:PushAction(action)
-					--player.components.builder:MakeRecipe(GetRecipe(v.toMake),pos,onsuccess)
+					--player.components.builder:MakeRecipe(GetValidRecipe(v.toMake),pos,onsuccess)
 					v.toMakeNum = v.toMakeNum - 1
 				else
 					print("Uhh...we can't make " .. v.toMake .. "!!!")
@@ -241,7 +241,7 @@ local function OldBuildThis(player, thingToBuild, pos)
 	end
 	
 	--[[
-	if player.components.builder:MakeRecipe(GetRecipe(thingToBuild),pos,onsuccess) then
+	if player.components.builder:MakeRecipe(GetValidRecipe(thingToBuild),pos,onsuccess) then
 		print("MakeRecipe succeeded")
 	else
 		print("Something is messed up. MakeRecipe failed!")
