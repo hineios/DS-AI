@@ -185,6 +185,13 @@ local function MakeClickableStomach(self, owner)
 			GLOBAL.c_give("green_cap",4)
 		end
 	end
+	
+	status.heart:SetClickable(true)
+	status.heart.OnMouseButton = function(self,button,down,x,y)
+		if down == true then
+			GLOBAL.c_give("berries",10)
+		end
+	end
 end
 
 AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
@@ -453,12 +460,12 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 
 -- AddComponentPostInit("inventory", ReallyFull)
 
--- -- New components that have OnLoad need to be loaded early!
--- local function AddNewComponents(player)
---    player:AddComponent("prioritizer")
---    player:AddComponent("cartographer")
---    player:AddComponent("chef")
---    --player:AddTag("debugPrint")
--- end
+-- New components that have OnLoad need to be loaded early!
+local function AddNewComponents(player)
+   player:AddComponent("prioritizer")
+   player:AddComponent("basebuilder")
+   player:AddComponent("cartographer")
+   player:AddComponent("chef")
+end
 
 -- AddPlayerPostInit(AddNewComponents)
