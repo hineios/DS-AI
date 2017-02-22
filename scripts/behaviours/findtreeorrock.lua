@@ -98,24 +98,9 @@ function FindTreeOrRock:FindAndEquipRightTool()
 end
 
 function FindTreeOrRock:GetTarget()
-	local target = FindEntity(self.targetInst, self.distance(), function(item)
-		if not item.components.workable then return false end
-		if not item.components.workable:IsActionValid(self.actionType) then return false end
-
-		-- TODO: Put ignored prefabs
-		if self.inst.brain:OnIgnoreList(item.prefab) then return false end
-		-- We will ignore some things forever
-		if self.inst.brain:OnIgnoreList(item.entity:GetGUID()) then return false end
-		-- Don't go near things with hostile dudes
-		if self.inst.brain:HostileMobNearInst(item) then
-			print("Ignoring " .. item.prefab .. " as there is something spooky by it")
-			return false 
-		end
-		
-
 	local target = FindEntity(self.inst, self.distance(), function(item)
 			if not item.components.workable then return false end
-			if not item.components.workable:IsActionValid(self.actionType) then return false end
+			if not item.components.workable:CanBeWorked() then return false end
 			
 			-- TODO: Put ignored prefabs
 			if self.inst.components.prioritizer:OnIgnoreList(item.prefab) then return false end
