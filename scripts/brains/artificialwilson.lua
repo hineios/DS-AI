@@ -425,6 +425,23 @@ local function FixStuckWilson(inst)
     end
 end
 
+-- Adds our custom success and fail callback to a buffered action
+-- actionNumber is for a watchdog node
+
+local function SetupBufferedAction(inst, action, timeout)
+	if timeout == nil then 
+		timeout = CurrentSearchDistance 
+	end
+	inst:AddTag("DoingAction")
+	inst.currentAction = inst:DoTaskInTime((CurrentSearchDistance*.75)+3,function() ActionDone(inst, {theAction = action, state="watchdog", actionNum=actionNumber}) end)
+	inst.currentBufferedAction = action
+	action:AddSuccessAction(function() inst:PushEvent("actionDone",{theAction = action, state="success"}) end)
+	action:AddFailAction(function() inst:PushEvent("actionDone",{theAction = action, state="failed"}) end)
+	print(action:__tostring())
+	actionNumber = actionNumber + 1
+	return action	
+end
+
 --------------------------------------------------------------------------------
 -- Go home stuff
 local function HasValidHome(inst)
@@ -595,6 +612,7 @@ function ArtificialBrain:OnStart()
 	self.inst:AddComponent("cartographer")
 	self.inst:AddComponent("prioritizer")
 	self.inst:AddComponent("chef")
+	self.inst:AddComponent("basebuilder")
 	
 	--self.inst:ListenForEvent("actionDone",ActionDone)
 	self.inst:ListenForEvent("buildstructure", ListenForBuild)
@@ -741,6 +759,7 @@ function ArtificialBrain:OnStart()
 			
 			CookFood(self.inst,10),
 				
+			ManageBase(self.inst),
 			--IfNode( function() return IsNearCookingSource(self.inst) end, "let's cook",
 			--	DoAction(self.inst, function() return CookSomeFood(self.inst) end, "cooking food", true)),
 			

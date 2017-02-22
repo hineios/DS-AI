@@ -1,6 +1,19 @@
 -- local dlcEnabled = GLOBAL.IsDLCEnabled(GLOBAL.REIGN_OF_GIANTS)
 -- local SEASONS = GLOBAL.SEASONS
 
+Assets = {
+    Asset("IMAGE", "images/map_circle.tex"),
+    Asset("ATLAS", "images/map_circle.xml"),
+}
+
+AddMinimapAtlas("images/map_circle.xml")
+
+-- Stole this from flingomatic range check mod...
+PrefabFiles = 
+{
+   "range"
+}
+
 
 -- Debug Helpers
 GLOBAL.CHEATS_ENABLED = true
@@ -28,18 +41,6 @@ local function DumpBT(bnode, indent)
 		end
 	end
 end
-Assets = {
-    Asset("IMAGE", "images/map_circle.tex"),
-    Asset("ATLAS", "images/map_circle.xml"),
-}
-
-AddMinimapAtlas("images/map_circle.xml")
-
--- Stole this from flingomatic range check mod...
-PrefabFiles = 
-{
-   "range"
-}
 
 
 local function SetSelfAI()
@@ -281,30 +282,30 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 --                             if foundpath then
 --                                 --Print(VERBOSITY.DEBUG, string.format("PATH %d steps ", #foundpath.steps))
 --                                 print(string.format("PATH %d steps ", #foundpath.steps))
-                    if self.bufferedaction.target and self.bufferedaction.target.Transform then
-                        self.inst:FacePoint(self.bufferedaction.target.Transform:GetWorldPosition())
-                    end
-                    self.inst:PushBufferedAction(self.bufferedaction)
-                end
-                self:Stop()
-                self:Clear()
-            else
-                --Print(VERBOSITY.DEBUG, "LOCOMOTING")
-                if self:WaitingForPathSearch() then
-                    local pathstatus = GetWorld().Pathfinder:GetSearchStatus(self.path.handle)
-                    --Print(VERBOSITY.DEBUG, "HAS PATH SEARCH", pathstatus)
-                    --print("HAS PATH SEARCH " .. tostring(pathstatus))
-                    if pathstatus ~= STATUS_CALCULATING then
-                        --Print(VERBOSITY.DEBUG, "PATH CALCULATION complete", pathstatus)
-                        if self.inst:HasTag("player") then print("PATH CALC COMPLETE " .. tostring(pathstatus)) end
-                        if self.inst:HasTag("player") then print("STATUS_FOUNDPATH = " .. tostring(STATUS_FOUNDPATH)) end
-                        if pathstatus == STATUS_FOUNDPATH then
-                            --Print(VERBOSITY.DEBUG, "PATH FOUND")
-                            if self.inst:HasTag("player") then print("PATH FOUND") end
-                            local foundpath = GetWorld().Pathfinder:GetSearchResult(self.path.handle)
-                            if foundpath then
-                                --Print(VERBOSITY.DEBUG, string.format("PATH %d steps ", #foundpath.steps))
-                                if self.inst:HasTag("player") then print(string.format("PATH %d steps ", #foundpath.steps)) end
+            --         if self.bufferedaction.target and self.bufferedaction.target.Transform then
+            --             self.inst:FacePoint(self.bufferedaction.target.Transform:GetWorldPosition())
+            --         end
+            --         self.inst:PushBufferedAction(self.bufferedaction)
+            --     end
+            --     self:Stop()
+            --     self:Clear()
+            -- else
+            --     --Print(VERBOSITY.DEBUG, "LOCOMOTING")
+            --     if self:WaitingForPathSearch() then
+            --         local pathstatus = GetWorld().Pathfinder:GetSearchStatus(self.path.handle)
+            --         --Print(VERBOSITY.DEBUG, "HAS PATH SEARCH", pathstatus)
+            --         --print("HAS PATH SEARCH " .. tostring(pathstatus))
+            --         if pathstatus ~= STATUS_CALCULATING then
+            --             --Print(VERBOSITY.DEBUG, "PATH CALCULATION complete", pathstatus)
+            --             if self.inst:HasTag("player") then print("PATH CALC COMPLETE " .. tostring(pathstatus)) end
+            --             if self.inst:HasTag("player") then print("STATUS_FOUNDPATH = " .. tostring(STATUS_FOUNDPATH)) end
+            --             if pathstatus == STATUS_FOUNDPATH then
+            --                 --Print(VERBOSITY.DEBUG, "PATH FOUND")
+            --                 if self.inst:HasTag("player") then print("PATH FOUND") end
+            --                 local foundpath = GetWorld().Pathfinder:GetSearchResult(self.path.handle)
+            --                 if foundpath then
+            --                     --Print(VERBOSITY.DEBUG, string.format("PATH %d steps ", #foundpath.steps))
+            --                     if self.inst:HasTag("player") then print(string.format("PATH %d steps ", #foundpath.steps)) end
     
 --                                 if #foundpath.steps > 2 then
 --                                     self.path.steps = foundpath.steps
@@ -442,30 +443,30 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 -- AddComponentPostInit("locomotor",RoGOnUpdate)
 
 
--- local function ReallyFull(self)
+local function ReallyFull(self)
 
---     self.IsTotallyFull = function()
---         local invFull = self:IsFull()
---         local overFull = true
---         if self.overflow then
---             if self.overflow.components.container then
---                 --print("Is my " .. self.overflow.prefab .. " full?")
---                 overFull = self.overflow.components.container:IsFull()
---             end
---         end    
---         return not not invFull and not not overFull
---     end
+    self.IsTotallyFull = function()
+        local invFull = self:IsFull()
+        local overFull = true
+        if self.overflow then
+            if self.overflow.components.container then
+                --print("Is my " .. self.overflow.prefab .. " full?")
+                overFull = self.overflow.components.container:IsFull()
+            end
+        end    
+        return not not invFull and not not overFull
+    end
 
--- end
+end
 
--- AddComponentPostInit("inventory", ReallyFull)
+AddComponentPostInit("inventory", ReallyFull)
 
 -- New components that have OnLoad need to be loaded early!
-local function AddNewComponents(player)
-   player:AddComponent("prioritizer")
-   player:AddComponent("basebuilder")
-   player:AddComponent("cartographer")
-   player:AddComponent("chef")
-end
+-- local function AddNewComponents(player)
+--    player:AddComponent("prioritizer")
+--    player:AddComponent("basebuilder")
+--    player:AddComponent("cartographer")
+--    player:AddComponent("chef")
+-- end
 
 -- AddPlayerPostInit(AddNewComponents)
