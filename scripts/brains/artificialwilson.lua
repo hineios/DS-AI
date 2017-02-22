@@ -4,7 +4,7 @@ require "behaviours/chaseandattack"
 require "behaviours/runaway"
 require "behaviours/doaction"
 
-
+require "behaviours/managebase"
 
 require "behaviours/managehunger"
 require "behaviours/managehealth"
@@ -584,15 +584,29 @@ end
 
 function ArtificialBrain:OnStop()
 	print("Stopping the brain!")
+
+	--Removing Callbacks
 	--self.inst:RemoveEventCallback("actionDone",ActionDone)
 	self.inst:RemoveEventCallback("buildstructure", ListenForBuild)
 	self.inst:RemoveEventCallback("builditem",ListenForBuild)
 	self.inst:RemoveEventCallback("attacked", OnHitFcn)
 	self.inst:RemoveEventCallback("noPathFound", OnPathFinder)
-   self.inst:RemoveEventCallback("actionsuccess", OnActionSuccess)
-   self.inst:RemoveEventCallback("actionfailed", OnActionFailed)
+   	self.inst:RemoveEventCallback("actionsuccess", OnActionSuccess)
+   	self.inst:RemoveEventCallback("actionfailed", OnActionFailed)
+
+   	-- Removing Tags
 	self.inst:RemoveTag("DoingLongAction")
 	self.inst:RemoveTag("DoingAction")
+	self.inst:RemoveTag("ArtificialWilson")
+
+	--Removing Components
+	--self.inst:RemoveComponent("cartographer")
+	self.inst:RemoveComponent("prioritizer")
+	self.inst:RemoveComponent("chef")
+	self.inst:RemoveComponent("basebuilder")
+	self.inst:RemoveComponent("follower")
+	self.inst:RemoveComponent("homeseeker")
+
 
 end
 
@@ -608,12 +622,17 @@ end
 function ArtificialBrain:OnStart()
 	local clock = TheWorld.components.worldstate.data
 	
-	-- These can no longer be added in playerPostInit in modmain
-	self.inst:AddComponent("cartographer")
+	self.inst:AddTag("ArtificialWilson")
+
+	-- Adding required components
+	--self.inst:AddComponent("cartographer")
 	self.inst:AddComponent("prioritizer")
-	self.inst:AddComponent("chef")
-	self.inst:AddComponent("basebuilder")
+	-- self.inst:AddComponent("chef")
+	-- self.inst:AddComponent("basebuilder")
+	self.inst:AddComponent("follower")
+	self.inst:AddComponent("homeseeker")
 	
+
 	--self.inst:ListenForEvent("actionDone",ActionDone)
 	self.inst:ListenForEvent("buildstructure", ListenForBuild)
 	self.inst:ListenForEvent("builditem", ListenForBuild)

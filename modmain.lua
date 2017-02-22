@@ -45,22 +45,13 @@ end
 
 local function SetSelfAI()
 	print("Enabling Artificial Wilson")
-	
-	--GLOBAL.ThePlayer:RemoveComponent("playercontroller")
 
-	GLOBAL.ThePlayer:AddComponent("follower")
-	GLOBAL.ThePlayer:AddComponent("homeseeker")
-	GLOBAL.ThePlayer:AddTag("ArtificialWilson")
-	
-	-- local brain = GLOBAL.require "brains/walterbrain"
 	local brain = GLOBAL.require "brains/artificialwilson"
 	GLOBAL.ThePlayer:SetBrain(brain)
 	GLOBAL.ThePlayer:RestartBrain()
 	DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
 	
 	ArtificalWilsonEnabled = true
-	
-	--GLOBAL.ThePlayer:ListenForEvent("attacked", OnAttacked)
 end
 
 local function SetSelfNormal()
@@ -71,58 +62,35 @@ local function SetSelfNormal()
 	GLOBAL.ThePlayer:RestartBrain()
 	--DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
 
-	GLOBAL.ThePlayer:RemoveTag("ArtificialWilson")
-	GLOBAL.ThePlayer:RemoveComponent("follower")
-	GLOBAL.ThePlayer:RemoveComponent("homeseeker")
-	
 	ArtificalWilsonEnabled = false
 end
 
---[[
--- TODO Maybe port this?
-GLOBAL.TheInput:AddKeyDownHandler(GLOBAL.KEY_P, function()
-	local TheInput = GLOBAL.TheInput
-	if not GLOBAL.IsPaused() and TheInput:IsKeyDown(GLOBAL.KEY_CTRL) and not TheInput:IsKeyDown(GLOBAL.KEY_ALT) then
-		setSelfAI()
-	elseif not GLOBAL.IsPaused() and TheInput:IsKeyDown(GLOBAL.KEY_CTRL) and TheInput:IsKeyDown(GLOBAL.KEY_ALT) then
-		setSelfNormal()
-	end
-end)
-]]--
+-- local function MakeClickableHearth(self, owner)
 
+-- 	local HearthBadge = self
 
-local function MakeClickableHearth(self, owner)
+-- 	HearthBadge:SetClickable(true)
 
-	local HearthBadge = self
-
-	HearthBadge:SetClickable(true)
-
-	HearthBadge.OnMouseButton = function(self,button,down,x,y)
-		local wilson = GLOBAL.c_spawn("wilson")
-		local pos = GLOBAL.Vector3(GLOBAL.ThePlayer.Transform:GetWorldPosition())
-		if wilson and pos then
-			wilson:AddComponent("follower")
-			wilson:AddComponent("homeseeker")
-			wilson:AddComponent("inventory")
-			wilson:AddTag("ArtificialWilson")
+-- 	HearthBadge.OnMouseButton = function(self,button,down,x,y)
+-- 		local wilson = GLOBAL.c_spawn("wilson")
+-- 		local pos = GLOBAL.Vector3(GLOBAL.ThePlayer.Transform:GetWorldPosition())
+-- 		if wilson and pos then
 			
-			local brain = GLOBAL.require "brains/artificialwilson"
-			wilson:SetBrain(brain)
-			wilson:RestartBrain()
-			DumpBT(wilson.brain.bt.root, 0)
-			wilson.Transform:SetPosition(pos:Get())
-		end
-	end
-end
+-- 			local brain = GLOBAL.require "brains/artificialwilson"
+-- 			wilson:SetBrain(brain)
+-- 			wilson:RestartBrain()
+-- 			DumpBT(wilson.brain.bt.root, 0)
+-- 			wilson.Transform:SetPosition(pos:Get())
+-- 		end
+-- 	end
+-- end
 
-AddClassPostConstruct("widgets/healthbadge", MakeClickableHearth)
+-- AddClassPostConstruct("widgets/healthbadge", MakeClickableHearth)
 
 
 local function MakeClickableBrain(self, owner)
 
-	local player = GLOBAL.GetPlayer()
-	local controls = player.HUD.controls
-	local status = controls.status
+	local BrainBadge = self
 	
     BrainBadge:SetClickable(true)
 
@@ -186,16 +154,27 @@ local function MakeClickableStomach(self, owner)
 			GLOBAL.c_give("green_cap",4)
 		end
 	end
-	
-	status.heart:SetClickable(true)
-	status.heart.OnMouseButton = function(self,button,down,x,y)
-		if down == true then
-			GLOBAL.c_give("berries",10)
-		end
-	end
 end
 
 AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
+
+local function ReallyFull(self)
+
+    self.IsTotallyFull = function()
+        local invFull = self:IsFull()
+        local overFull = true
+        if self.overflow then
+            if self.overflow.components.container then
+                --print("Is my " .. self.overflow.prefab .. " full?")
+                overFull = self.overflow.components.container:IsFull()
+            end
+        end    
+        return not not invFull and not not overFull
+    end
+
+end
+
+AddComponentPostInit("inventory", ReallyFull)
 
 -- ---------------------------------------------------------------------------------
 -- -- LOCOMOTOR MOD
@@ -325,16 +304,16 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 --                                 GetWorld().Pathfinder:KillSearch(self.path.handle)
 --                                 self.path.handle = nil
 --                                 self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
-                                else
-                                    --Print(VERBOSITY.DEBUG, "DISCARDING straight line path")
-                                    self.path.steps = nil
-                                    self.path.currentstep = nil
-                                end
-                            else
-                                if self.inst:HasTag("player") then print("EMPTY PATH") end
-                                GetWorld().Pathfinder:KillSearch(self.path.handle)
-                                self.path.handle = nil
-                                self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
+                            --     else
+                            --         --Print(VERBOSITY.DEBUG, "DISCARDING straight line path")
+                            --         self.path.steps = nil
+                            --         self.path.currentstep = nil
+                            --     end
+                            -- else
+                            --     if self.inst:HasTag("player") then print("EMPTY PATH") end
+                            --     GetWorld().Pathfinder:KillSearch(self.path.handle)
+                            --     self.path.handle = nil
+                            --     self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
                                 
 --                             end
 --                         else
@@ -345,15 +324,15 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 --                                 GetWorld().Pathfinder:KillSearch(self.path.handle)
 --                                 self.path.handle = nil
 --                                 self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
-                            end
-                        else
-                            if pathstatus == nil then
-                                if self.inst:HasTag("player") then print(string.format("LOST PATH SEARCH %u. Maybe it timed out?", self.path.handle)) end
-                            else
-                                if self.inst:HasTag("player") then print("NO PATH") end
-                                GetWorld().Pathfinder:KillSearch(self.path.handle)
-                                self.path.handle = nil
-                                self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
+                        --     end
+                        -- else
+                        --     if pathstatus == nil then
+                        --         if self.inst:HasTag("player") then print(string.format("LOST PATH SEARCH %u. Maybe it timed out?", self.path.handle)) end
+                        --     else
+                        --         if self.inst:HasTag("player") then print("NO PATH") end
+                        --         GetWorld().Pathfinder:KillSearch(self.path.handle)
+                        --         self.path.handle = nil
+                        --         self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
                                 
 --                             end
 --                         end
@@ -441,32 +420,3 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 
 
 -- AddComponentPostInit("locomotor",RoGOnUpdate)
-
-
-local function ReallyFull(self)
-
-    self.IsTotallyFull = function()
-        local invFull = self:IsFull()
-        local overFull = true
-        if self.overflow then
-            if self.overflow.components.container then
-                --print("Is my " .. self.overflow.prefab .. " full?")
-                overFull = self.overflow.components.container:IsFull()
-            end
-        end    
-        return not not invFull and not not overFull
-    end
-
-end
-
-AddComponentPostInit("inventory", ReallyFull)
-
--- New components that have OnLoad need to be loaded early!
--- local function AddNewComponents(player)
---    player:AddComponent("prioritizer")
---    player:AddComponent("basebuilder")
---    player:AddComponent("cartographer")
---    player:AddComponent("chef")
--- end
-
--- AddPlayerPostInit(AddNewComponents)
