@@ -116,7 +116,7 @@ function FindTreeOrRock:Visit()
 			-- There's no good way to tell if it will drop a special loot in the code.
 			if item:HasTag("tree") and item:HasTag("burnt") then
     			 -- Charcoal!
-    			 local invFull = self.inst.components.inventory:IsTotallyFull()
+    			 local invFull = self.inst.components.inventory:IsFull()
     			 if not invFull then
     			     return true
     			 end
@@ -145,7 +145,7 @@ function FindTreeOrRock:Visit()
     			     
     			     local itemInInv = self.inst.components.inventory:FindItem(function(i) return i.prefab == k end)
     			     -- If we don't have one and not full, pick it up!
-    			     if not itemInInv and not self.inst.components.inventory:IsTotallyFull() then
+    			     if not itemInInv and not self.inst.components.inventory:IsFull() then
     			         return true
     			     end
     			     
@@ -190,7 +190,7 @@ function FindTreeOrRock:Visit()
 				
             -- Make sure we have room for it! 
             -- TODO: Drop something else? Or just wait? 
-            if self.inst.components.inventory:IsTotallyFull() then 
+            if self.inst.components.inventory:IsFull() then 
               self.status = FAILED
               return
             end

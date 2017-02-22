@@ -1,4 +1,3 @@
--- local Vector3 = GLOBAL.Vector3
 -- local dlcEnabled = GLOBAL.IsDLCEnabled(GLOBAL.REIGN_OF_GIANTS)
 -- local SEASONS = GLOBAL.SEASONS
 
@@ -44,18 +43,19 @@ PrefabFiles =
 
 
 local function SetSelfAI()
-	print("Enabling Artifical Wilson")
+	print("Enabling Artificial Wilson")
 	
 	--GLOBAL.ThePlayer:RemoveComponent("playercontroller")
 
-	-- GLOBAL.ThePlayer:AddComponent("follower")
-	-- GLOBAL.ThePlayer:AddComponent("homeseeker")
-	GLOBAL.ThePlayer:AddTag("ArtificalWilson")
+	GLOBAL.ThePlayer:AddComponent("follower")
+	GLOBAL.ThePlayer:AddComponent("homeseeker")
+	GLOBAL.ThePlayer:AddTag("ArtificialWilson")
 	
-	local brain = GLOBAL.require "brains/walterbrain"
+	-- local brain = GLOBAL.require "brains/walterbrain"
+	local brain = GLOBAL.require "brains/artificialwilson"
 	GLOBAL.ThePlayer:SetBrain(brain)
 	GLOBAL.ThePlayer:RestartBrain()
-	-- DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
+	DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
 	
 	ArtificalWilsonEnabled = true
 	
@@ -70,9 +70,9 @@ local function SetSelfNormal()
 	GLOBAL.ThePlayer:RestartBrain()
 	--DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
 
-	GLOBAL.ThePlayer:RemoveTag("ArtificalWilson")
-	-- GLOBAL.ThePlayer:RemoveComponent("follower")
-	-- GLOBAL.ThePlayer:RemoveComponent("homeseeker")
+	GLOBAL.ThePlayer:RemoveTag("ArtificialWilson")
+	GLOBAL.ThePlayer:RemoveComponent("follower")
+	GLOBAL.ThePlayer:RemoveComponent("homeseeker")
 	
 	ArtificalWilsonEnabled = false
 end
@@ -87,54 +87,41 @@ GLOBAL.TheInput:AddKeyDownHandler(GLOBAL.KEY_P, function()
 		setSelfNormal()
 	end
 end)
-]]
+]]--
 
---[[
--- TODO Finish spawning an Artificial Wilson
+
 local function MakeClickableHearth(self, owner)
-	local HealthBadge = self
 
-local function spawnAI(sim)
+	local HearthBadge = self
 
-	sim.SpawnWilson = function(inst)
-		wilson = GLOBAL.c_spawn("wilson")
-		pos = Vector3(GLOBAL.ThePlayer.Transform:GetWorldPosition())
+	HearthBadge:SetClickable(true)
+
+	HearthBadge.OnMouseButton = function(self,button,down,x,y)
+		local wilson = GLOBAL.c_spawn("wilson")
+		local pos = GLOBAL.Vector3(GLOBAL.ThePlayer.Transform:GetWorldPosition())
 		if wilson and pos then
 			wilson:AddComponent("follower")
 			wilson:AddComponent("homeseeker")
 			wilson:AddComponent("inventory")
-			wilson:AddTag("ArtificalWilson")
+			wilson:AddTag("ArtificialWilson")
 			
-			local brain = GLOBAL.require "brains/artificalwilson"
+			local brain = GLOBAL.require "brains/artificialwilson"
 			wilson:SetBrain(brain)
 			wilson:RestartBrain()
+			DumpBT(wilson.brain.bt.root, 0)
 			wilson.Transform:SetPosition(pos:Get())
 		end
 	end
-	
-	local function OnAttacked(inst, data)
-		inst.components.combat:SetTarget(data.attacker)
-	end
-	
-	
-	
-	sim.SetSelfAI = setSelfAI
-	sim.SetSelfNormal = setSelfNormal
-	
-	
-	sim.Crash = function(inst) local a = inst.components.crashGame.yay end
-
 end
 
-AddComponentPostInit("clock", spawnAI)
-
-end
-]]--
+AddClassPostConstruct("widgets/healthbadge", MakeClickableHearth)
 
 
 local function MakeClickableBrain(self, owner)
 
-    local BrainBadge = self
+	local player = GLOBAL.GetPlayer()
+	local controls = player.HUD.controls
+	local status = controls.status
 	
     BrainBadge:SetClickable(true)
 

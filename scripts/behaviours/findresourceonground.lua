@@ -117,7 +117,7 @@ function FindResourceOnGround:Visit()
            
                   end
                   
-                  if num == 0 and self.inst.components.inventory:IsTotallyFull() then
+                  if num == 0 and self.inst.components.inventory:IsFull() then
                      return false
                   end
                   

@@ -1,5 +1,5 @@
 -- Mod Settings
-name = "Artifical Wilson - Under Development"
+name = "Artificial Wilson - Under Development"
 description = "Tired of playing the game? Let the game play for you! Click the brain to activate a smart AI capable of playing the game alone."
 author = "Hineios"
 version = "0.1"
