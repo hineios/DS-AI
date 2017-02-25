@@ -30,7 +30,7 @@ function ManageHealth:Visit()
 			return
 		end
 	
-	local healthMissing = self.inst.components.health:GetMaxHealth() - self.inst.components.health.currenthealth
+	local healthMissing = self.inst.components.health:GetMaxWithPenalty() - self.inst.components.health.currenthealth
 	
 	-- Do we have edible food? 
 	local bestFood = nil

@@ -82,7 +82,7 @@ function ManageInventory:FreeUpSpace()
                            (not item.components.stackable))
                         end)
    
-   local healthMissing = self.inst.components.health:GetMaxHealth() - self.inst.components.health.currenthealth
+   local healthMissing = self.inst.components.health:GetMaxWithPenalty() - self.inst.components.health.currenthealth
    local hungerMissing = self.inst.components.hunger.max - self.inst.components.hunger.current
    local sanityMissing = self.inst.components.sanity.max - self.inst.components.sanity.current
 
