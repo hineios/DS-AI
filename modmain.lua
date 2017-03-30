@@ -1,6 +1,18 @@
--- local Vector3 = GLOBAL.Vector3
 -- local dlcEnabled = GLOBAL.IsDLCEnabled(GLOBAL.REIGN_OF_GIANTS)
 -- local SEASONS = GLOBAL.SEASONS
+
+Assets = {
+    Asset("IMAGE", "images/map_circle.tex"),
+    Asset("ATLAS", "images/map_circle.xml"),
+}
+
+AddMinimapAtlas("images/map_circle.xml")
+
+-- Stole this from flingomatic range check mod...
+PrefabFiles = 
+{
+   "range"
+}
 
 
 -- Debug Helpers
@@ -10,8 +22,6 @@ GLOBAL.require 'debughelpers'
 
 
 local ArtificalWilsonEnabled = false
--- AddBrainPostInit("artificalwilson", ArtificalWilson)
--- AddBrainPostInit("walterbrain", WalterBrain)
 
 -- Since the final brain a creature gets doesn't quite look like the brain
 -- specified in code, use this utility to print a brain to the console and
@@ -30,102 +40,31 @@ local function DumpBT(bnode, indent)
 	end
 end
 
-
-local function SetSelfAI()
-	print("Enabling Artifical Wilson")
-	
-	--GLOBAL.ThePlayer:RemoveComponent("playercontroller")
-
-	-- GLOBAL.ThePlayer:AddComponent("follower")
-	-- GLOBAL.ThePlayer:AddComponent("homeseeker")
-	GLOBAL.ThePlayer:AddTag("ArtificalWilson")
-	
-	local brain = GLOBAL.require "brains/walterbrain"
-	GLOBAL.ThePlayer:SetBrain(brain)
-	GLOBAL.ThePlayer:RestartBrain()
-	-- DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
-	
-	ArtificalWilsonEnabled = true
-	
-	--GLOBAL.ThePlayer:ListenForEvent("attacked", OnAttacked)
-end
-
-local function SetSelfNormal()
-	print("Disabling Artifical Wilson")
-	
-	local brain = GLOBAL.require "brains/wilsonbrain"
-	GLOBAL.ThePlayer:SetBrain(brain)
-	GLOBAL.ThePlayer:RestartBrain()
-	--DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
-
-	GLOBAL.ThePlayer:RemoveTag("ArtificalWilson")
-	-- GLOBAL.ThePlayer:RemoveComponent("follower")
-	-- GLOBAL.ThePlayer:RemoveComponent("homeseeker")
-	
-	ArtificalWilsonEnabled = false
-end
-
---[[
--- TODO Maybe port this?
-GLOBAL.TheInput:AddKeyDownHandler(GLOBAL.KEY_P, function()
-	local TheInput = GLOBAL.TheInput
-	if not GLOBAL.IsPaused() and TheInput:IsKeyDown(GLOBAL.KEY_CTRL) and not TheInput:IsKeyDown(GLOBAL.KEY_ALT) then
-		setSelfAI()
-	elseif not GLOBAL.IsPaused() and TheInput:IsKeyDown(GLOBAL.KEY_CTRL) and TheInput:IsKeyDown(GLOBAL.KEY_ALT) then
-		setSelfNormal()
-	end
+AddModRPCHandler(modname, "SetSelfAI", function(player)
+    if player then
+            print("Enabling Artificial Walter")
+            local brain = GLOBAL.require "brains/artificialwilson"
+			player:SetBrain(brain)
+			player:RestartBrain()
+    end
 end)
-]]
 
---[[
--- TODO Finish spawning an Artificial Wilson
-local function MakeClickableHearth(self, owner)
-	local HealthBadge = self
-
-local function spawnAI(sim)
-
-	sim.SpawnWilson = function(inst)
-		wilson = GLOBAL.c_spawn("wilson")
-		pos = Vector3(GLOBAL.ThePlayer.Transform:GetWorldPosition())
-		if wilson and pos then
-			wilson:AddComponent("follower")
-			wilson:AddComponent("homeseeker")
-			wilson:AddComponent("inventory")
-			wilson:AddTag("ArtificalWilson")
-			
-			local brain = GLOBAL.require "brains/artificalwilson"
-			wilson:SetBrain(brain)
-			wilson:RestartBrain()
-			wilson.Transform:SetPosition(pos:Get())
-		end
-	end
-	
-	local function OnAttacked(inst, data)
-		inst.components.combat:SetTarget(data.attacker)
-	end
-	
-	
-	
-	sim.SetSelfAI = setSelfAI
-	sim.SetSelfNormal = setSelfNormal
-	
-	
-	sim.Crash = function(inst) local a = inst.components.crashGame.yay end
-
-end
-
-AddComponentPostInit("clock", spawnAI)
-
-end
-]]--
-
+AddModRPCHandler(modname, "SetSelfNormal", function(player)
+    if player then
+            print("Disabling Artificial Walter")
+            local brain = GLOBAL.require "brains/wilsonbrain"
+			player:SetBrain(brain)
+			player:RestartBrain()
+    end
+end)
 
 local function MakeClickableBrain(self, owner)
 
-    local BrainBadge = self
+	local BrainBadge = self
 	
     BrainBadge:SetClickable(true)
 
+    -- Make the brain pulse for a cool effect
 	local x = 0
 	local darker = true
 	local function BrainPulse(self)
@@ -152,16 +91,50 @@ local function MakeClickableBrain(self, owner)
 			if ArtificalWilsonEnabled then
 				self.owner.BrainPulse:Cancel()
 				BrainBadge.anim:GetAnimState():SetMultColour(1,1,1,1)
-				SetSelfNormal()
+				SendModRPCToServer(MOD_RPC[modname]["SetSelfNormal"])
+				--print("Disabling Artificial Wilson")
+				ArtificalWilsonEnabled = false
 			else
 				BrainPulse(self.owner)
-				SetSelfAI()
+				SendModRPCToServer(MOD_RPC[modname]["SetSelfAI"])
+				--print("Enabling Artificial Wilson")
+				ArtificalWilsonEnabled = true
 			end
 		end
 	end
 end
-
 AddClassPostConstruct("widgets/sanitybadge", MakeClickableBrain)
+
+AddModRPCHandler(modname, "GiveItems", function(player)
+    if player and player.components.inventory then
+        print("Giving stuff to Player")
+        
+    	local items = {}
+    	items["log"] = 20
+    	items["twigs"] = 20
+    	items["cutgrass"] = 20
+    	items["flint"] = 20
+		items["goldnugget"] = 20
+		items["rocks"] = 20
+		items["charcoal"] = 6
+		items["berries"] = 10
+		items["carrot"] = 10
+		items["acorn_cooked"] = 4
+		items["monstermeat"] = 4
+		items["smallmeat"] = 4
+		items["fish"] = 4
+		items["green_cap"] = 4
+
+    	for k, v in pairs(items) do
+	        for i = 1, v or 1 do
+	        	local inst = GLOBAL.DebugSpawn(k)
+	        	if inst ~= nil then
+	            	player.components.inventory:GiveItem(inst)
+	            end
+	        end
+	    end
+    end
+end)
 
 local function MakeClickableStomach(self, owner)
 
@@ -170,25 +143,30 @@ local function MakeClickableStomach(self, owner)
 	StomachBadge:SetClickable(true)
 	StomachBadge.OnMouseButton = function(self,button,down,x,y)
 		if down == true then
-			GLOBAL.c_give("log",20)
-			GLOBAL.c_give("twigs",20)
-			GLOBAL.c_give("cutgrass",20)
-			GLOBAL.c_give("flint",20)
-			GLOBAL.c_give("goldnugget",20)
-			GLOBAL.c_give("rocks",20)
-			GLOBAL.c_give("charcoal",6)
-			GLOBAL.c_give("berries",10)
-			GLOBAL.c_give("carrot",10)
-			GLOBAL.c_give("acorn_cooked",4)
-			GLOBAL.c_give("monstermeat",4)
-			GLOBAL.c_give("smallmeat",4)
-			GLOBAL.c_give("fish",4)
-			GLOBAL.c_give("green_cap",4)
+			SendModRPCToServer(MOD_RPC[modname]["GiveItems"])
 		end
 	end
 end
 
 AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
+
+local function ReallyFull(self)
+
+    self.IsTotallyFull = function()
+        local invFull = self:IsFull()
+        local overFull = true
+        if self.overflow then
+            if self.overflow.components.container then
+                --print("Is my " .. self.overflow.prefab .. " full?")
+                overFull = self.overflow.components.container:IsFull()
+            end
+        end    
+        return not not invFull and not not overFull
+    end
+
+end
+
+AddComponentPostInit("inventory", ReallyFull)
 
 -- ---------------------------------------------------------------------------------
 -- -- LOCOMOTOR MOD
@@ -275,6 +253,30 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 --                             if foundpath then
 --                                 --Print(VERBOSITY.DEBUG, string.format("PATH %d steps ", #foundpath.steps))
 --                                 print(string.format("PATH %d steps ", #foundpath.steps))
+            --         if self.bufferedaction.target and self.bufferedaction.target.Transform then
+            --             self.inst:FacePoint(self.bufferedaction.target.Transform:GetWorldPosition())
+            --         end
+            --         self.inst:PushBufferedAction(self.bufferedaction)
+            --     end
+            --     self:Stop()
+            --     self:Clear()
+            -- else
+            --     --Print(VERBOSITY.DEBUG, "LOCOMOTING")
+            --     if self:WaitingForPathSearch() then
+            --         local pathstatus = GetWorld().Pathfinder:GetSearchStatus(self.path.handle)
+            --         --Print(VERBOSITY.DEBUG, "HAS PATH SEARCH", pathstatus)
+            --         --print("HAS PATH SEARCH " .. tostring(pathstatus))
+            --         if pathstatus ~= STATUS_CALCULATING then
+            --             --Print(VERBOSITY.DEBUG, "PATH CALCULATION complete", pathstatus)
+            --             if self.inst:HasTag("player") then print("PATH CALC COMPLETE " .. tostring(pathstatus)) end
+            --             if self.inst:HasTag("player") then print("STATUS_FOUNDPATH = " .. tostring(STATUS_FOUNDPATH)) end
+            --             if pathstatus == STATUS_FOUNDPATH then
+            --                 --Print(VERBOSITY.DEBUG, "PATH FOUND")
+            --                 if self.inst:HasTag("player") then print("PATH FOUND") end
+            --                 local foundpath = GetWorld().Pathfinder:GetSearchResult(self.path.handle)
+            --                 if foundpath then
+            --                     --Print(VERBOSITY.DEBUG, string.format("PATH %d steps ", #foundpath.steps))
+            --                     if self.inst:HasTag("player") then print(string.format("PATH %d steps ", #foundpath.steps)) end
     
 --                                 if #foundpath.steps > 2 then
 --                                     self.path.steps = foundpath.steps
@@ -294,6 +296,16 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 --                                 GetWorld().Pathfinder:KillSearch(self.path.handle)
 --                                 self.path.handle = nil
 --                                 self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
+                            --     else
+                            --         --Print(VERBOSITY.DEBUG, "DISCARDING straight line path")
+                            --         self.path.steps = nil
+                            --         self.path.currentstep = nil
+                            --     end
+                            -- else
+                            --     if self.inst:HasTag("player") then print("EMPTY PATH") end
+                            --     GetWorld().Pathfinder:KillSearch(self.path.handle)
+                            --     self.path.handle = nil
+                            --     self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
                                 
 --                             end
 --                         else
@@ -304,6 +316,15 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 --                                 GetWorld().Pathfinder:KillSearch(self.path.handle)
 --                                 self.path.handle = nil
 --                                 self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
+                        --     end
+                        -- else
+                        --     if pathstatus == nil then
+                        --         if self.inst:HasTag("player") then print(string.format("LOST PATH SEARCH %u. Maybe it timed out?", self.path.handle)) end
+                        --     else
+                        --         if self.inst:HasTag("player") then print("NO PATH") end
+                        --         GetWorld().Pathfinder:KillSearch(self.path.handle)
+                        --         self.path.handle = nil
+                        --         self.inst:PushEvent("noPathFound", {inst=self.inst, target=self.dest.inst, pos=Point(destpos_x, destpos_y, destpos_z)})
                                 
 --                             end
 --                         end
@@ -391,32 +412,3 @@ AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 
 
 -- AddComponentPostInit("locomotor",RoGOnUpdate)
-
-
--- local function ReallyFull(self)
-
---     self.IsTotallyFull = function()
---         local invFull = self:IsFull()
---         local overFull = true
---         if self.overflow then
---             if self.overflow.components.container then
---                 --print("Is my " .. self.overflow.prefab .. " full?")
---                 overFull = self.overflow.components.container:IsFull()
---             end
---         end    
---         return not not invFull and not not overFull
---     end
-
--- end
-
--- AddComponentPostInit("inventory", ReallyFull)
-
--- -- New components that have OnLoad need to be loaded early!
--- local function AddNewComponents(player)
---    player:AddComponent("prioritizer")
---    player:AddComponent("cartographer")
---    player:AddComponent("chef")
---    --player:AddTag("debugPrint")
--- end
-
--- AddPlayerPostInit(AddNewComponents)

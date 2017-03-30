@@ -4,7 +4,7 @@ require "behaviours/chaseandattack"
 require "behaviours/runaway"
 require "behaviours/doaction"
 
-
+require "behaviours/managebase"
 
 require "behaviours/managehunger"
 require "behaviours/managehealth"
@@ -25,7 +25,7 @@ require "brains/ai_build_helper"
 require "brains/ai_combat_helper"
 require "brains/ai_inventory_helper"
 
-local MIN_SEARCH_DISTANCE = 15
+local MIN_SEARCH_DISTANCE = 10
 local MAX_SEARCH_DISTANCE = 100
 local SEARCH_SIZE_STEP = 10
 local RUN_AWAY_SEE_DIST = 5
@@ -62,7 +62,7 @@ local function decrementFromGatherList(_prefab,_number)
 end
 
 local function addRecipeToGatherList(thingToBuild, addFullRecipe)
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
     if recipe then
 		local player = GetPlayer()
         for ik, iv in pairs(recipe.ingredients) do
@@ -105,7 +105,7 @@ local function CanIBuildThis(player, thingToBuild, numToBuild, recursive)
 	
 	if numToBuild == nil then numToBuild = 1 end
 	
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
 	
 	-- Not a real thing so we can't possibly build this
 	if not recipe then 
@@ -172,7 +172,7 @@ end
 
 -- Should only be called after the above call to ensure we can build it.
 local function OldBuildThis(player, thingToBuild, pos)
-	local recipe = GetRecipe(thingToBuild)
+	local recipe = GetValidRecipe(thingToBuild)
 	-- not a real thing
 	if not recipe then return end
 	
@@ -229,7 +229,7 @@ local function OldBuildThis(player, thingToBuild, pos)
 					local action = BufferedAction(player,nil,ACTIONS.BUILD,nil,pos,v.toMake,nil)
 					player:PushBufferedAction(action)
 					--player.components.locomotor:PushAction(action)
-					--player.components.builder:MakeRecipe(GetRecipe(v.toMake),pos,onsuccess)
+					--player.components.builder:MakeRecipe(GetValidRecipe(v.toMake),pos,onsuccess)
 					v.toMakeNum = v.toMakeNum - 1
 				else
 					print("Uhh...we can't make " .. v.toMake .. "!!!")
@@ -241,7 +241,7 @@ local function OldBuildThis(player, thingToBuild, pos)
 	end
 	
 	--[[
-	if player.components.builder:MakeRecipe(GetRecipe(thingToBuild),pos,onsuccess) then
+	if player.components.builder:MakeRecipe(GetValidRecipe(thingToBuild),pos,onsuccess) then
 		print("MakeRecipe succeeded")
 	else
 		print("Something is messed up. MakeRecipe failed!")
@@ -268,7 +268,7 @@ end
 
 ------------------------------------------------------------------------------------------------
 
-local ArtificalBrain = Class(Brain, function(self, inst)
+local ArtificialBrain = Class(Brain, function(self, inst)
     Brain._ctor(self,inst)
 end)
 
@@ -278,7 +278,7 @@ end)
 
 -- Helpful function...just returns a point at a random angle 
 -- a distance dist away.
-function ArtificalBrain:GetPointNearThing(thing, dist)
+function ArtificialBrain:GetPointNearThing(thing, dist)
 	local pos = Vector3(thing.Transform:GetWorldPosition())
 	if pos then
 		local theta = math.random() * 2 * PI
@@ -291,7 +291,7 @@ function ArtificalBrain:GetPointNearThing(thing, dist)
 end
 
 -- Just copied the function. Other one will go away soon.
-function ArtificalBrain:HostileMobNearInst(inst)
+function ArtificialBrain:HostileMobNearInst(inst)
 	local pos = inst.Transform:GetWorldPosition()
 	if pos then
 		return FindEntity(inst,RUN_AWAY_SEE_DIST,function(guy) return ShouldRunAway(guy) end) ~= nil
@@ -299,16 +299,16 @@ function ArtificalBrain:HostileMobNearInst(inst)
 	return false
 end
 
-function ArtificalBrain:GetCurrentSearchDistance()
+function ArtificialBrain:GetCurrentSearchDistance()
 	return CurrentSearchDistance
 end
 
-function ArtificalBrain:IncreaseSearchDistance()
+function ArtificialBrain:IncreaseSearchDistance()
 	CurrentSearchDistance = math.min(MAX_SEARCH_DISTANCE,CurrentSearchDistance + SEARCH_SIZE_STEP)
 		print("IncreaseSearchDistance to: " .. tostring(CurrentSearchDistance))
 end
 
-function ArtificalBrain:ResetSearchDistance()
+function ArtificialBrain:ResetSearchDistance()
 	CurrentSearchDistance = MIN_SEARCH_DISTANCE
 end
 
@@ -425,6 +425,23 @@ local function FixStuckWilson(inst)
     end
 end
 
+-- Adds our custom success and fail callback to a buffered action
+-- actionNumber is for a watchdog node
+
+local function SetupBufferedAction(inst, action, timeout)
+	if timeout == nil then 
+		timeout = CurrentSearchDistance 
+	end
+	inst:AddTag("DoingAction")
+	inst.currentAction = inst:DoTaskInTime((CurrentSearchDistance*.75)+3,function() ActionDone(inst, {theAction = action, state="watchdog", actionNum=actionNumber}) end)
+	inst.currentBufferedAction = action
+	action:AddSuccessAction(function() inst:PushEvent("actionDone",{theAction = action, state="success"}) end)
+	action:AddFailAction(function() inst:PushEvent("actionDone",{theAction = action, state="failed"}) end)
+	print(action:__tostring())
+	actionNumber = actionNumber + 1
+	return action	
+end
+
 --------------------------------------------------------------------------------
 -- Go home stuff
 local function HasValidHome(inst)
@@ -509,9 +526,11 @@ local function FindSomewhereNewToGo(inst)
 end
 
 local function MidwayThroughDusk()
-	local clock = GetClock()
-	local startTime = clock:GetDuskTime()
-	return clock:IsDusk() and (clock:GetTimeLeftInEra() < startTime/2)
+	return true
+	--TODO find a way to tell if i'm half through dusk or not....
+	-- local clock = GLOBAL.TheWorld.components.worldstate.data
+	-- local startTime = clock:GetDuskTime()
+	-- return clock:isdusk and (clock:GetTimeLeftInEra() < startTime/2)
 end
 
 local function IsBusy(inst)
@@ -525,7 +544,7 @@ end
 
 -- Used by doscience node. It expects a table returned with
 -- These really should be part of the builder component...but I'm too lazy to add them there. 
-function ArtificalBrain:GetSomethingToBuild()
+function ArtificialBrain:GetSomethingToBuild()
 	if self.newPendingBuild and self.newPendingBuild == true then
 		self.newPendingBuild = false
 		return self.pendingBuildTable
@@ -533,14 +552,14 @@ function ArtificalBrain:GetSomethingToBuild()
 end
 
 -- Returns true if prefab is still in the queue to be built
-function ArtificalBrain:CheckBuildQueued(prefab)
+function ArtificialBrain:CheckBuildQueued(prefab)
    if self.newPendingBuild then
       return self.pendingBuildTable.prefab == prefab
    end
    return false
 end
 
-function ArtificalBrain:SetSomethingToBuild(prefab, pos, onsuccess, onfail)
+function ArtificialBrain:SetSomethingToBuild(prefab, pos, onsuccess, onfail)
 	if self.pendingBuildTable == nil then
 		self.pendingBuildTable = {}
 	end
@@ -563,17 +582,31 @@ function ArtificalBrain:SetSomethingToBuild(prefab, pos, onsuccess, onfail)
 	self.newPendingBuild = true
 end
 
-function ArtificalBrain:OnStop()
+function ArtificialBrain:OnStop()
 	print("Stopping the brain!")
+
+	--Removing Callbacks
 	--self.inst:RemoveEventCallback("actionDone",ActionDone)
 	self.inst:RemoveEventCallback("buildstructure", ListenForBuild)
 	self.inst:RemoveEventCallback("builditem",ListenForBuild)
 	self.inst:RemoveEventCallback("attacked", OnHitFcn)
 	self.inst:RemoveEventCallback("noPathFound", OnPathFinder)
-   self.inst:RemoveEventCallback("actionsuccess", OnActionSuccess)
-   self.inst:RemoveEventCallback("actionfailed", OnActionFailed)
+   	self.inst:RemoveEventCallback("actionsuccess", OnActionSuccess)
+   	self.inst:RemoveEventCallback("actionfailed", OnActionFailed)
+
+   	-- Removing Tags
 	self.inst:RemoveTag("DoingLongAction")
 	self.inst:RemoveTag("DoingAction")
+	self.inst:RemoveTag("ArtificialWilson")
+
+	--Removing Components
+	--self.inst:RemoveComponent("cartographer")
+	self.inst:RemoveComponent("prioritizer")
+	self.inst:RemoveComponent("chef")
+	self.inst:RemoveComponent("basebuilder")
+	self.inst:RemoveComponent("follower")
+	self.inst:RemoveComponent("homeseeker")
+
 
 end
 
@@ -582,17 +615,24 @@ end
 -- is loaded...just do
 -- if inst.brain.IsAILoaded ~= nil then
 -- ...
-function ArtificalBrain:IsAILoaded()
+function ArtificialBrain:IsAILoaded()
    self.isLoaded = true
 end
 
-function ArtificalBrain:OnStart()
-	local clock = GetClock()
+function ArtificialBrain:OnStart()
+	local clock = TheWorld.components.worldstate.data
 	
-	-- These are added in playerPostInit in modmain
+	self.inst:AddTag("ArtificialWilson")
+
+	-- Adding required components
 	--self.inst:AddComponent("cartographer")
-	--self.inst:AddComponent("prioritizer")
+	self.inst:AddComponent("prioritizer")
+	self.inst:AddComponent("chef")
+	self.inst:AddComponent("basebuilder")
+	self.inst:AddComponent("follower")
+	self.inst:AddComponent("homeseeker")
 	
+
 	--self.inst:ListenForEvent("actionDone",ActionDone)
 	self.inst:ListenForEvent("buildstructure", ListenForBuild)
 	self.inst:ListenForEvent("builditem", ListenForBuild)
@@ -613,6 +653,7 @@ function ArtificalBrain:OnStart()
 	self.inst.components.prioritizer:AddToIgnoreList("ash")
 	self.inst.components.prioritizer:AddToIgnoreList("ice") -- Will need it eventually...just not soon
 	self.inst.components.prioritizer:AddToIgnoreList("cave_entrance") --We're not going down...quit letting the bats out idiot!
+	self.inst.components.prioritizer:AddToIgnoreList("livinglog") -- Won't need these for a while
 	
 	-- If we don't have a home, find a science machine in the world and make that our home
 	if not HasValidHome(self.inst) then
@@ -624,7 +665,7 @@ function ArtificalBrain:OnStart()
 	end
 	
 	-- Things to do during the day
-	local day = WhileNode( function() return clock and clock:IsDay() end, "IsDay",
+	local day = WhileNode( function() return clock and clock.isday end, "IsDay",
 		PriorityNode{
 			
 			-- Eat something if hunger gets below .5
@@ -640,10 +681,6 @@ function ArtificalBrain:OnStart()
 
 			-- Collect stuff
 			SelectorNode{
-			   -- Should maybe stick around and wait for this thing to finish burning...he just
-			   -- kind of runs away...
-            IfNode( function() return not IsBusy(self.inst) end, "notBusy_goBurn",
-               FindThingToBurn(self.inst, function() return self:GetCurrentSearchDistance() end)),
 				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goPickup",
 					FindResourceOnGround(self.inst, function() return self:GetCurrentSearchDistance() end)),
 				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goHarvest",
@@ -652,6 +689,10 @@ function ArtificalBrain:OnStart()
 					FindTreeOrRock(self.inst,  function() return self:GetCurrentSearchDistance() end, ACTIONS.CHOP)),
 				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goMine",
 					FindTreeOrRock(self.inst,  function() return self:GetCurrentSearchDistance() end, ACTIONS.MINE)),
+		      -- Should maybe stick around and wait for this thing to finish burning...he just
+            -- kind of runs away...
+            IfNode( function() return not IsBusy(self.inst) end, "notBusy_goBurn",
+               FindThingToBurn(self.inst, function() return self:GetCurrentSearchDistance() end)),
 				
 					-- Finally, if none of those succeed, increase the search distance for
 					-- the next loop.
@@ -668,7 +709,7 @@ function ArtificalBrain:OnStart()
 		
 
 	-- Do this stuff the first half of duck (or all of dusk if we don't have a home yet)
-	local dusk = WhileNode( function() return clock and clock:IsDusk() and (not MidwayThroughDusk() or not HasValidHome(self.inst)) end, "IsDusk",
+	local dusk = WhileNode( function() return clock and clock.isdusk and (not MidwayThroughDusk() or not HasValidHome(self.inst)) end, "IsDusk",
         PriorityNode{
 				
 			-- Make sure we eat. During the day, only make sure to stay above 50% hunger.
@@ -704,7 +745,7 @@ function ArtificalBrain:OnStart()
         },.2)
 		
 		-- Behave slightly different half way through dusk
-		local dusk2 = WhileNode( function() return clock and clock:IsDusk() and MidwayThroughDusk() and HasValidHome(self.inst) end, "IsDusk2",
+		local dusk2 = WhileNode( function() return clock and clock.isdusk and MidwayThroughDusk() and HasValidHome(self.inst) end, "IsDusk2",
 			PriorityNode{
 			
 			--IfNode( function() return not IsBusy(self.inst) and  self.inst.components.hunger:GetPercent() < .5 end, "notBusy_hungry",
@@ -727,7 +768,7 @@ function ArtificalBrain:OnStart()
 				
 		},.25)
 		
-	local night = WhileNode( function() return clock and clock:IsNight() end, "IsNight",
+	local night = WhileNode( function() return clock and clock.isnight end, "IsNight",
         PriorityNode{
 			-- TODO: If we aren't home but we have a home, make a torch and keep running!
 				
@@ -737,6 +778,7 @@ function ArtificalBrain:OnStart()
 			
 			CookFood(self.inst,10),
 				
+			ManageBase(self.inst),
 			--IfNode( function() return IsNearCookingSource(self.inst) end, "let's cook",
 			--	DoAction(self.inst, function() return CookSomeFood(self.inst) end, "cooking food", true)),
 			
@@ -778,7 +820,7 @@ function ArtificalBrain:OnStart()
 			DontBeOnFire(self.inst),
 			
 			-- 
-			WhileNode(function() return clock and clock:IsNight() end, "StayInTheLight",
+			WhileNode(function() return clock and clock.isnight end, "StayInTheLight",
 			   MaintainLightSource(self.inst, 30)),
 			   
 			   
@@ -790,7 +832,7 @@ function ArtificalBrain:OnStart()
 			-- GoForTheEyes will set our combat target. If it returns true, kill
 			-- TODO: Don't do this at night. He will run out into the darkness and override
 			--       his need to stay in the light!
-			WhileNode(function() return not clock:IsNight() and GoForTheEyes(self.inst) end, "GoForTheEyes", 
+			WhileNode(function() return not clock.isnight and GoForTheEyes(self.inst) end, "GoForTheEyes", 
 				ChaseAndAttack(self.inst, 10,30)),
 			--DoAction(self.inst, function() return GoForTheEyes(self.inst) end, "GoForTheEyes", true),
 				
@@ -838,4 +880,4 @@ function ArtificalBrain:OnStart()
     self.bt = BT(self.inst, root)
 end
 
-return ArtificalBrain
+return ArtificialBrain

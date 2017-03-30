@@ -191,7 +191,7 @@ function ShouldRunAway(guy)
 	
    -- Angry worker bees don't have any special tag...so check to see if it's spring
    -- Also make sure .IsSpring is not nil (if no RoG, this will not be defined)
-   if guy:HasTag("worker") and GetSeasonManager() and GetSeasonManager().IsSpring ~= nil and GetSeasonManager():IsSpring() then
+   if guy:HasTag("worker") and TheWorld.components.worldstate.data.isspring then
       return true
    end
      
@@ -213,6 +213,7 @@ function ShouldRunAway(guy)
 	
 
 	return guy:HasTag("WORM_DANGER") or guy:HasTag("guard") or guy:HasTag("hostile") or 
-		guy:HasTag("scarytoprey") or guy:HasTag("frog") or guy:HasTag("mosquito") or guy:HasTag("merm")
+		guy:HasTag("scarytoprey") or guy:HasTag("frog") or guy:HasTag("mosquito") or guy:HasTag("merm") or
+		guy:HasTag("tallbird")
 
 end
