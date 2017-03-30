@@ -22,8 +22,6 @@ GLOBAL.require 'debughelpers'
 
 
 local ArtificalWilsonEnabled = false
--- AddBrainPostInit("artificalwilson", ArtificalWilson)
--- AddBrainPostInit("walterbrain", WalterBrain)
 
 -- Since the final brain a creature gets doesn't quite look like the brain
 -- specified in code, use this utility to print a brain to the console and
@@ -42,51 +40,23 @@ local function DumpBT(bnode, indent)
 	end
 end
 
+AddModRPCHandler(modname, "SetSelfAI", function(player)
+    if player then
+            print("Enabling Artificial Walter")
+            local brain = GLOBAL.require "brains/artificialwilson"
+			player:SetBrain(brain)
+			player:RestartBrain()
+    end
+end)
 
-local function SetSelfAI()
-	print("Enabling Artificial Wilson")
-
-	local brain = GLOBAL.require "brains/artificialwilson"
-	GLOBAL.ThePlayer:SetBrain(brain)
-	GLOBAL.ThePlayer:RestartBrain()
-	DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
-	
-	ArtificalWilsonEnabled = true
-end
-
-local function SetSelfNormal()
-	print("Disabling Artifical Wilson")
-	
-	local brain = GLOBAL.require "brains/wilsonbrain"
-	GLOBAL.ThePlayer:SetBrain(brain)
-	GLOBAL.ThePlayer:RestartBrain()
-	--DumpBT(GLOBAL.ThePlayer.brain.bt.root, 0)
-
-	ArtificalWilsonEnabled = false
-end
-
--- local function MakeClickableHearth(self, owner)
-
--- 	local HearthBadge = self
-
--- 	HearthBadge:SetClickable(true)
-
--- 	HearthBadge.OnMouseButton = function(self,button,down,x,y)
--- 		local wilson = GLOBAL.c_spawn("wilson")
--- 		local pos = GLOBAL.Vector3(GLOBAL.ThePlayer.Transform:GetWorldPosition())
--- 		if wilson and pos then
-			
--- 			local brain = GLOBAL.require "brains/artificialwilson"
--- 			wilson:SetBrain(brain)
--- 			wilson:RestartBrain()
--- 			DumpBT(wilson.brain.bt.root, 0)
--- 			wilson.Transform:SetPosition(pos:Get())
--- 		end
--- 	end
--- end
-
--- AddClassPostConstruct("widgets/healthbadge", MakeClickableHearth)
-
+AddModRPCHandler(modname, "SetSelfNormal", function(player)
+    if player then
+            print("Disabling Artificial Walter")
+            local brain = GLOBAL.require "brains/wilsonbrain"
+			player:SetBrain(brain)
+			player:RestartBrain()
+    end
+end)
 
 local function MakeClickableBrain(self, owner)
 
@@ -94,6 +64,7 @@ local function MakeClickableBrain(self, owner)
 	
     BrainBadge:SetClickable(true)
 
+    -- Make the brain pulse for a cool effect
 	local x = 0
 	local darker = true
 	local function BrainPulse(self)
@@ -120,16 +91,50 @@ local function MakeClickableBrain(self, owner)
 			if ArtificalWilsonEnabled then
 				self.owner.BrainPulse:Cancel()
 				BrainBadge.anim:GetAnimState():SetMultColour(1,1,1,1)
-				SetSelfNormal()
+				SendModRPCToServer(MOD_RPC[modname]["SetSelfNormal"])
+				--print("Disabling Artificial Wilson")
+				ArtificalWilsonEnabled = false
 			else
 				BrainPulse(self.owner)
-				SetSelfAI()
+				SendModRPCToServer(MOD_RPC[modname]["SetSelfAI"])
+				--print("Enabling Artificial Wilson")
+				ArtificalWilsonEnabled = true
 			end
 		end
 	end
 end
-
 AddClassPostConstruct("widgets/sanitybadge", MakeClickableBrain)
+
+AddModRPCHandler(modname, "GiveItems", function(player)
+    if player and player.components.inventory then
+        print("Giving stuff to Player")
+        
+    	local items = {}
+    	items["log"] = 20
+    	items["twigs"] = 20
+    	items["cutgrass"] = 20
+    	items["flint"] = 20
+		items["goldnugget"] = 20
+		items["rocks"] = 20
+		items["charcoal"] = 6
+		items["berries"] = 10
+		items["carrot"] = 10
+		items["acorn_cooked"] = 4
+		items["monstermeat"] = 4
+		items["smallmeat"] = 4
+		items["fish"] = 4
+		items["green_cap"] = 4
+
+    	for k, v in pairs(items) do
+	        for i = 1, v or 1 do
+	        	local inst = GLOBAL.DebugSpawn(k)
+	        	if inst ~= nil then
+	            	player.components.inventory:GiveItem(inst)
+	            end
+	        end
+	    end
+    end
+end)
 
 local function MakeClickableStomach(self, owner)
 
@@ -138,20 +143,7 @@ local function MakeClickableStomach(self, owner)
 	StomachBadge:SetClickable(true)
 	StomachBadge.OnMouseButton = function(self,button,down,x,y)
 		if down == true then
-			GLOBAL.c_give("log",20)
-			GLOBAL.c_give("twigs",20)
-			GLOBAL.c_give("cutgrass",20)
-			GLOBAL.c_give("flint",20)
-			GLOBAL.c_give("goldnugget",20)
-			GLOBAL.c_give("rocks",20)
-			GLOBAL.c_give("charcoal",6)
-			GLOBAL.c_give("berries",10)
-			GLOBAL.c_give("carrot",10)
-			GLOBAL.c_give("acorn_cooked",4)
-			GLOBAL.c_give("monstermeat",4)
-			GLOBAL.c_give("smallmeat",4)
-			GLOBAL.c_give("fish",4)
-			GLOBAL.c_give("green_cap",4)
+			SendModRPCToServer(MOD_RPC[modname]["GiveItems"])
 		end
 	end
 end
