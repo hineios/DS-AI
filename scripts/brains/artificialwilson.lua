@@ -627,8 +627,8 @@ function ArtificialBrain:OnStart()
 	-- Adding required components
 	--self.inst:AddComponent("cartographer")
 	self.inst:AddComponent("prioritizer")
-	-- self.inst:AddComponent("chef")
-	-- self.inst:AddComponent("basebuilder")
+	self.inst:AddComponent("chef")
+	self.inst:AddComponent("basebuilder")
 	self.inst:AddComponent("follower")
 	self.inst:AddComponent("homeseeker")
 	
