@@ -1,20 +1,3 @@
--- local dlcEnabled = GLOBAL.IsDLCEnabled(GLOBAL.REIGN_OF_GIANTS)
--- local SEASONS = GLOBAL.SEASONS
-
-Assets = {
-    Asset("IMAGE", "images/map_circle.tex"),
-    Asset("ATLAS", "images/map_circle.xml"),
-}
-
-AddMinimapAtlas("images/map_circle.xml")
-
--- Stole this from flingomatic range check mod...
-PrefabFiles = 
-{
-   "range"
-}
-
-
 -- Debug Helpers
 GLOBAL.CHEATS_ENABLED = true
 GLOBAL.require 'debugkeys' 
@@ -92,12 +75,10 @@ local function MakeClickableBrain(self, owner)
 				self.owner.BrainPulse:Cancel()
 				BrainBadge.anim:GetAnimState():SetMultColour(1,1,1,1)
 				SendModRPCToServer(MOD_RPC[modname]["SetSelfNormal"])
-				--print("Disabling Artificial Wilson")
 				ArtificalWilsonEnabled = false
 			else
 				BrainPulse(self.owner)
 				SendModRPCToServer(MOD_RPC[modname]["SetSelfAI"])
-				--print("Enabling Artificial Wilson")
 				ArtificalWilsonEnabled = true
 			end
 		end
