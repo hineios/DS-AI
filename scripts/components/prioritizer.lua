@@ -24,7 +24,7 @@ end
 
 -- Load our utility map
 function Prioritizer:OnLoad(data, newents)
-   print("Prioritizer:OnLoad called")
+   --print("Prioritizer:OnLoad called")
    self.ignore_list = data and data.ignore_list or {}
    self.build_order = data and data.build_order or {}
    self.build_parameters = data and data.build_parameters or {}
@@ -53,7 +53,7 @@ function Prioritizer:OnIgnoreList(prefab)
        end
    end
    
-   print("We can try " .. tostring(prefab) .. " again...")
+   --print("We can try " .. tostring(prefab) .. " again...")
    return false
 end
 
@@ -63,7 +63,7 @@ function Prioritizer:AddToIgnoreList(prefab, fromPos)
    --IGNORE_LIST[prefab] = fromPos or 1
    
    if self.ignore_list[prefab] == nil then
-      print("Adding " .. tostring(prefab) .. " to the ignore list")
+      --print("Adding " .. tostring(prefab) .. " to the ignore list")
       self.ignore_list[prefab] = {}
       self.ignore_list[prefab].posTable = {}
       self.ignore_list[prefab].always = false
@@ -76,7 +76,7 @@ function Prioritizer:AddToIgnoreList(prefab, fromPos)
    else
       -- We only want to ignore this specific GUID from this
       -- specific region
-      print("...updating ignore with pos: " .. tostring(fromPos))
+      --print("...updating ignore with pos: " .. tostring(fromPos))
       table.insert(self.ignore_list[prefab].posTable, fromPos)
    end
 end

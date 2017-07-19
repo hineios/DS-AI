@@ -659,7 +659,7 @@ function ArtificialBrain:OnStart()
 	if not HasValidHome(self.inst) then
 		local scienceMachine = FindEntity(self.inst, 10000, function(item) return item.prefab and item.prefab == "researchlab" end)
 		if scienceMachine then
-			print("Found our home!")
+			--print("Found our home!")
 			self.inst.components.homeseeker:SetHome(scienceMachine)
 		end
 	end
@@ -689,14 +689,13 @@ function ArtificialBrain:OnStart()
 					FindTreeOrRock(self.inst,  function() return self:GetCurrentSearchDistance() end, ACTIONS.CHOP)),
 				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goMine",
 					FindTreeOrRock(self.inst,  function() return self:GetCurrentSearchDistance() end, ACTIONS.MINE)),
-		      -- Should maybe stick around and wait for this thing to finish burning...he just
-            -- kind of runs away...
-            IfNode( function() return not IsBusy(self.inst) end, "notBusy_goBurn",
-               FindThingToBurn(self.inst, function() return self:GetCurrentSearchDistance() end)),
-				
-					-- Finally, if none of those succeed, increase the search distance for
-					-- the next loop.
-					-- Want this to fail always so we don't increase to max.
+		      	-- Should maybe stick around and wait for this thing to finish burning...he just
+            	-- kind of runs away...
+	            IfNode( function() return not IsBusy(self.inst) end, "notBusy_goBurn",
+	               	FindThingToBurn(self.inst, function() return self:GetCurrentSearchDistance() end)),
+				-- Finally, if none of those succeed, increase the search distance for
+				-- the next loop.
+				-- Want this to fail always so we don't increase to max.
 				IfNode( function() return not IsBusy(self.inst) end, "nothing_to_do",
 					NotDecorator(ActionNode(function() return self:IncreaseSearchDistance() end))),
 			},
@@ -877,7 +876,51 @@ function ArtificialBrain:OnStart()
 
         }, .25)
     
-    self.bt = BT(self.inst, root)
+
+    local test = 
+PriorityNode({
+    WhileNode( function() return clock and clock.isday end, "IsDay",
+		PriorityNode({
+			
+			-- Eat something if hunger gets below .5
+			ManageHunger(self.inst, .5),
+				
+			-- If there's a touchstone nearby, activate it
+			IfNode(function() return not IsBusy(self.inst) end, "notBusy_lookforTouchstone",
+				FindAndActivate(self.inst, 25, "resurrectionstone")),
+			
+			-- Find a good place to call home
+			IfNode( function() return not HasValidHome(self.inst) end, "no home",
+				DoAction(self.inst, function() return FindValidHome(self.inst) end, "looking for home", true)),
+
+			-- Collect stuff
+			SelectorNode{
+				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goPickup",
+					FindResourceOnGround(self.inst, function() return self:GetCurrentSearchDistance() end)),
+				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goHarvest",
+					FindResourceToHarvest(self.inst,  function() return self:GetCurrentSearchDistance() end)),
+				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goChop",
+					FindTreeOrRock(self.inst,  function() return self:GetCurrentSearchDistance() end, ACTIONS.CHOP)),
+				IfNode( function() return not IsBusy(self.inst) end, "notBusy_goMine",
+					FindTreeOrRock(self.inst,  function() return self:GetCurrentSearchDistance() end, ACTIONS.MINE)),
+		      	-- Should maybe stick around and wait for this thing to finish burning...he just
+            	-- kind of runs away...
+	            IfNode( function() return not IsBusy(self.inst) end, "notBusy_goBurn",
+	               	FindThingToBurn(self.inst, function() return self:GetCurrentSearchDistance() end)),
+				-- Finally, if none of those succeed, increase the search distance for
+				-- the next loop.
+				-- Want this to fail always so we don't increase to max.
+				IfNode( function() return not IsBusy(self.inst) end, "nothing_to_do",
+					NotDecorator(ActionNode(function() return self:IncreaseSearchDistance() end))),
+			},
+				
+			-- TODO: Need a good wander function for when searchdistance is at max.
+			IfNode(function() return not IsBusy(self.inst) and CurrentSearchDistance == MAX_SEARCH_DISTANCE end, "maxSearchDistance",
+				DoAction(self.inst, function() return FindSomewhereNewToGo(self.inst) end, "lookingForSomewhere", true)),
+		},.25)
+	)}, .25)
+
+    self.bt = BT(self.inst, test)
 end
 
 return ArtificialBrain

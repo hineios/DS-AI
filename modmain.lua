@@ -29,6 +29,7 @@ AddModRPCHandler(modname, "SetSelfAI", function(player)
             local brain = GLOBAL.require "brains/artificialwilson"
 			player:SetBrain(brain)
 			player:RestartBrain()
+			DumpBT(player.brain.bt.root, 0)
     end
 end)
 
