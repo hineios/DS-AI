@@ -1,14 +1,12 @@
-
-
 require "behaviours/chaseandattack"
 require "behaviours/runaway"
 require "behaviours/doaction"
 
 require "behaviours/managebase"
-
 require "behaviours/managehunger"
 require "behaviours/managehealth"
 require "behaviours/managesanity"
+
 require "behaviours/findandactivate"
 require "behaviours/findresourceonground"
 require "behaviours/findresourcetoharvest"

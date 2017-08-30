@@ -132,23 +132,22 @@ end
 
 AddClassPostConstruct("widgets/hungerbadge", MakeClickableStomach)
 
-local function ReallyFull(self)
 
-    self.IsTotallyFull = function()
-        local invFull = self:IsFull()
-        local overFull = true
-        if self.overflow then
-            if self.overflow.components.container then
-                --print("Is my " .. self.overflow.prefab .. " full?")
-                overFull = self.overflow.components.container:IsFull()
-            end
-        end    
-        return not not invFull and not not overFull
-    end
+-- local function ReallyFull(self)
+--     self.IsTotallyFull = function()
+--         local invFull = self:IsFull()
+--         local overFull = true
+--         if self.overflow then
+--             if self.overflow.components.container then
+--                 --print("Is my " .. self.overflow.prefab .. " full?")
+--                 overFull = self.overflow.components.container:IsFull()
+--             end
+--         end    
+--         return not not invFull and not not overFull
+--     end
 
-end
-
-AddComponentPostInit("inventory", ReallyFull)
+-- end
+-- AddComponentPostInit("inventory", ReallyFull)
 
 -- ---------------------------------------------------------------------------------
 -- -- LOCOMOTOR MOD
